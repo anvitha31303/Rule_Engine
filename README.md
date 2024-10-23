@@ -74,6 +74,13 @@ class Node:
         self.left = left  # Left child node
         self.right = right  # Right child node (for operators)
         self.value = value  # Value for operand nodes
+        
+--Non-Functional Things:
+**Input Validation: FastAPI provides built-in input validation for routes, ensuring that inputs are safe and adhere to expected data types. This reduces the risk of invalid or malicious inputs.
+
+**Cross-Origin Resource Sharing (CORS): If the application is exposed to the web, setting up CORS policies will ensure that only trusted domains can make requests to your API.
+
+**Error Handling: The application includes proper error handling for API calls and database operations. This ensures that if something goes wrong (e.g., network failure or incorrect API responses), the system fails gracefully.
 
 ---Non-Technical Parts
 ##My Approach
