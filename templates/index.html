@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4; /* Light gray background */
+            color: #333; /* Dark text color */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full height */
+        }
+
+        .container {
+            background-color: #fff; /* White background for content */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 20px;
+            width: 400px; /* Fixed width for the container */
+            text-align: center; /* Center align text */
+        }
+
+        h1, h2 {
+            color: #2c3e50; /* Darker text color for headings */
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%; /* Full width */
+            padding: 10px;
+            margin: 10px 0; /* Space between inputs */
+            border: 1px solid #ccc; /* Light border */
+            border-radius: 4px; /* Slightly rounded edges */
+        }
+
+        button {
+            background-color: #3498db; /* Blue button color */
+            color: white; /* White text */
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px; /* Rounded button edges */
+            cursor: pointer; /* Pointer cursor on hover */
+            margin-top: 10px; /* Space above button */
+        }
+
+        button:hover {
+            background-color: #2980b9; /* Darker blue on hover */
+        }
+
+        pre {
+            background-color: #eaeaea; /* Light gray background for output */
+            padding: 10px;
+            border-radius: 4px; /* Rounded edges for output */
+            overflow-x: auto; /* Allow horizontal scrolling if necessary */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rule Engine</h1>
+
+        <h2>Create Rule</h2>
+        <input type="text" id="ruleInput" placeholder="Enter your rule (e.g., age > 30)">
+        <button onclick="createRule()">Create Rule</button>
+
+        <h2>Combine Rules</h2>
+        <textarea id="rulesInput" placeholder="Enter rules, one per line"></textarea>
+        <button onclick="combineRules()">Combine Rules</button>
+
+        <h2>Evaluate Rule</h2>
+        <textarea id="dataInput" placeholder="Enter JSON data (e.g., { 'age': 35 })"></textarea>
+        <button onclick="evaluateRule()">Evaluate Rule</button>
+
+        <h2>Output</h2>
+        <pre id="output"></pre>
+    </div>
+
+    <script>
+        async function createRule() {
+            const rule = document.getElementById('ruleInput').value;
+            const response = await fetch('/create_rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rule }),
+            });
+            const result = await response.json();
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        async function combineRules() {
+            const rules = document.getElementById('rulesInput').value.split('\n');
+            const response = await fetch('/combine_rules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rules }),
+            });
+            const result = await response.json();
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        function parseRuleInput(input) {
+            const rules = input.split('\n').map(rule => {
+                if (rule.includes('>')) {
+                    const parts = rule.split('>');
+                    return {
+                        "type": "operator",
+                        "value": "Gt",
+                        "left": { "type": "operand", "value": parts[0].trim() },
+                        "right": { "type": "operand", "value": parseInt(parts[1].trim(), 10) }
+                    };
+                }
+                if (rule.includes('==')) {
+                    const parts = rule.split('==');
+                    return {
+                        "type": "operator",
+                        "value": "Eq",
+                        "left": { "type": "operand", "value": parts[0].trim() },
+                        "right": { "type": "operand", value: parts[1].trim().replace(/'/g, '') } // Remove single quotes
+                    };
+                }
+                // Add more operators as needed...
+            });
+            return {
+                "type": "operator",
+                "value": "AND",
+                "left": rules[0],
+                "right": rules[1]
+            };
+        }
+
+        async function evaluateRule() {
+            try {
+                const data = JSON.parse(document.getElementById('dataInput').value);
+                const ast = parseRuleInput(document.getElementById('rulesInput').value); // Create AST from user input
+
+                const response = await fetch('/evaluate_rule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ast, data }),  // Provide the rule input and data for evaluation
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('output').innerText = `Error: ${JSON.stringify(error, null, 2)}`;
+                }
+            } catch (error) {
+                document.getElementById('output').innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
